@@ -5,7 +5,7 @@ NoteLauncher is an Application Launcher for Pine64 PineNote
 
 It's in it's very early stages, so most things are hard coded while the underlaying functionality is put together.
 
-## Technical details
+## Technical Details
 NoteLauncher is built in [Nim](https://nim-lang.org/) and uses the [SDL2](https://www.libsdl.org/) library.
 
 > Hint! The best way to install the SDL2 libraries in macOS is to use [Homebrew](https://brew.sh/) with the following command: `brew install sdl2{,_gfx,_image,_mixer,_net,_ttf}`
@@ -17,5 +17,28 @@ The following Nim libraries are needed:
 
 `Pixie` is a graphics library and `SDL2` is Nim bindings for the SDL2 C library.
 
-### Build and run
+### Build and Run
 Navigate to the project directory and run: `nim c -r launcher.nim`
+
+
+## To Do
+- [ ] Make the view scrollable
+  - [ ] Detect dragging (touch scrolling)
+  - [ ] Make layout relative to scroll
+- [ ] Draw icons and names in a grid
+  - [ ] Make `icon object` with fields for `icon`(url string), `executable`(url string) and `name`(string)
+  - [ ] Make store for icon objects (list of `icon object`)
+  - [ ] Make grid view that can draw icons and names in a data store (layout math)
+- [ ] Load icon objects from `.desktop` files
+- [ ] Make clicking an icon launch the application
+
+## Done
+- [x] Create SDL2 window
+- [x] Scale window for development
+- [x] Update window on event
+- [x] Load SVG into window
+- [x] Load font
+- [x] Draw app names in correct places
+- [x] Detect mouse click and motion
+- [x] Draw tap targets
+- [x] Detect target on click
