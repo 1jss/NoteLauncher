@@ -22,6 +22,7 @@ Navigate to the project directory and run: `nim c -r launcher.nim`
 
 
 ## To Do
+
 - [ ] Make the view scrollable
   - [ ] Detect dragging (touch scrolling)
   - [ ] Make layout relative to scroll
@@ -33,7 +34,8 @@ Navigate to the project directory and run: `nim c -r launcher.nim`
 - [ ] Make clicking an icon launch the application
 
 ## Done
-- [x] Create SDL2 window
+
+- [x] Create SDL2 window
 - [x] Scale window for development
 - [x] Update window on event
 - [x] Load SVG into window
