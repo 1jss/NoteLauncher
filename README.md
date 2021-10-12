@@ -1,7 +1,7 @@
 # NoteLauncher
 NoteLauncher is an Application Launcher for Pine64 PineNote
 
-![](/screenshots/Screenshot-2021-10-09.png)
+![](/screenshots/Screenshot-2021-10-12.png)
 
 It's in it's very early stages, so most things are hard coded while the underlaying functionality is put together.
 
@@ -18,4 +18,4 @@ The following Nim libraries are needed:
 `Pixie` is a graphics library and `SDL2` is Nim bindings for the SDL2 C library.
 
 ### Build and run
-Go to the project directory and run: `nim c -r launcher.nim`
+Navigate to the project directory and run: `nim c -r launcher.nim`
