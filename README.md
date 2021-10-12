@@ -24,7 +24,7 @@ Navigate to the project directory and run: `nim c -r launcher.nim`
 ## To Do
 
 - [ ] Make the view scrollable
-  - [ ] Detect dragging (touch scrolling)
+  - [x] Detect dragging (touch scrolling)
   - [ ] Make layout relative to scroll
 - [ ] Draw icons and names in a grid
   - [ ] Make `icon object` with fields for `icon`(url string), `executable`(url string) and `name`(string)
@@ -33,14 +33,14 @@ Navigate to the project directory and run: `nim c -r launcher.nim`
 - [ ] Load icon objects from `.desktop` files
 - [ ] Make clicking an icon launch the application
 
-## Done
+### Done
 
 - [x] Create SDL2 window
-- [x] Scale window for development
-- [x] Update window on event
+- [x] Scale window to half for development
 - [x] Load SVG into window
 - [x] Load font
 - [x] Draw app names in correct places
 - [x] Detect mouse click and motion
+- [x] Update window on mouse event
 - [x] Draw tap targets
 - [x] Detect target on click

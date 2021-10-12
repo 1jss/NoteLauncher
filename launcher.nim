@@ -1,8 +1,14 @@
 ## This example show how to have real time pixie using sdl2 API.
 
 import math, pixie, sdl2
- #sdl2/gfx
 
+ # Synthetic sugar: Iterator shortcut: a...b
+iterator `...`*[T](a: T, b: T): T =
+  var res: T = T(a)
+  while res <= b:
+    yield res
+    inc res
+    
 const
   rmask = uint32 0x000000ff
   gmask = uint32 0x0000ff00
@@ -28,12 +34,17 @@ var
   mainSurface: SurfacePtr
   mainTexture: TexturePtr
   evt = sdl2.defaultEvent
+  font = readFont("data/Ubuntu-Regular_1.ttf")
+
+ # Mouse variables
+var
   mx = 0 # Mouse x
   my = 0 # Mouse y
   omx = 0 # Old mouse x
   omy = 0 # Old mouse y
+  mxc = 0 # Mouse x on click
+  myc = 0 # Mouse y on click
   leftMouseButtonDown = false
-  font = readFont("data/Ubuntu-Regular_1.ttf")
 
 proc blit() =
   var dataPtr = ctx.image.data[0].addr
@@ -59,13 +70,6 @@ proc drawIconText(text: string, column, row: float) =
   screen.fillText(font.typeset(text, vec2(dpi(300), dpi(32)), hAlign = haCenter, vAlign = vaTop, wrap = true), translate(vec2(tx, ty)))
 
 let wh = vec2(100, 100)
-
-# Iterator shortcut: a...b
-iterator `...`*[T](a: T, b: T): T =
-  var res: T = T(a)
-  while res <= b:
-    yield res
-    inc res
 
 proc checkMouseCollition(bx, by:float, wh: Vec2):bool =
   let fmx = float(mx)
@@ -103,12 +107,6 @@ proc inhabitDisplay() =
     scale(vec2(scale,scale))
     )
 
-  #[screen.draw(
-    icons,
-    scale(vec2(0.5, 0.5)) *
-    translate(vec2(100, 100))
-  )]#
-
   initFont()
   drawIconText("Terminal Emulator", 1, 1)
   drawIconText("Calculator", 2, 1)
@@ -127,7 +125,7 @@ proc inhabitDisplay() =
   drawIconText("Activity Monitor", 3, 4)
   drawIconText("Text Chat", 4, 4)
 
-  #drawTapTargets()
+  #drawTapTargets() # For debugging tap targets
 
   blit()
 
@@ -143,6 +141,8 @@ proc updateDisplay() =
   ctx.strokeSegment(segment(start, stop))
   blit()
 
+ # Application MAIN
+
 discard sdl2.init(INIT_EVERYTHING)
 
 window = createWindow(
@@ -156,31 +156,46 @@ window = createWindow(
 render = createRenderer(window, -1, 0)
 initDisplay()
 inhabitDisplay()
+  
+
+ # Mouse and Window event logic 
 
 while true:
-  #  while pollEvent(evt):
   while waitEvent(evt):
     case evt.kind:
       of QuitEvent:
         quit(0)
       of MouseButtonUp:
+        # Left mouse button is released
         if (evt.button.button == 1):
           leftMouseButtonDown = false
+          mx = evt.button.x
+          my = evt.button.y
+          if ((mxc-mx < 20) and (mxc-mx > -20) and (myc-my < 20) and (myc-my > -20)):
+            clickedButton()
       of MouseButtonDown:
+        # Left mouse button is pressed
         if (evt.button.button == 1):
           leftMouseButtonDown = true
           omx = evt.button.x
           omy = evt.button.y
-          mx = evt.button.x
-          my = evt.button.y
-          clickedButton()
+          mxc = evt.button.x
+          myc = evt.button.y
       of MouseMotion:
+        # Mouse is dragged
         if(leftMouseButtonDown):
           mx = evt.motion.x
           my = evt.motion.y
+          if (mxc-mx > 20):
+            echo "go right"
+          elif (mxc-mx < -20):
+            echo "go left"
+          if (myc-my > 20):
+            echo "go down"
+          elif (myc-my < -20):
+            echo "go up"
           updateDisplay()
           omx = mx
           omy = my
       else:
         discard
-  #delay(14)
