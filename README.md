@@ -23,13 +23,6 @@ Navigate to the project directory and run: `nim c -r launcher.nim`
 
 ## To Do
 
-- [ ] Make the view scrollable
-  - [x] Detect dragging (touch scrolling)
-  - [ ] Make layout relative to scroll
-- [ ] Draw icons and names in a grid
-  - [ ] Make `icon object` with fields for `icon`(url string), `executable`(url string) and `name`(string)
-  - [ ] Make store for icon objects (list of `icon object`)
-  - [ ] Make grid view that can draw icons and names in a data store (layout math)
 - [ ] Load icon objects from `.desktop` files
 - [ ] Make clicking an icon launch the application
 
@@ -44,3 +37,10 @@ Navigate to the project directory and run: `nim c -r launcher.nim`
 - [x] Update window on mouse event
 - [x] Draw tap targets
 - [x] Detect target on click
+- [x] Make the view scrollable
+  - [x] Detect dragging (touch scrolling)
+  - [x] Make layout relative to scroll
+- [x] Draw icons and names in a grid
+  - [x] Make `icon object` with fields for `icon`(url string), `executable`(url string) and `name`(string)
+  - [x] Make store for icon objects (list of `icon object`)
+  - [x] Make grid view that can draw icons and names in a data store (layout math)

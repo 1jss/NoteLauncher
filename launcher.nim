@@ -1,201 +1,287 @@
-## This example show how to have real time pixie using sdl2 API.
+import pixie, sdl2
 
-import math, pixie, sdl2
+discard sdl2.init(INIT_EVERYTHING)
 
- # Synthetic sugar: Iterator shortcut: a...b
-iterator `...`*[T](a: T, b: T): T =
-  var res: T = T(a)
-  while res <= b:
-    yield res
-    inc res
+const
+  scl = 2 # Scale for development on smaller screen
+  WindowWidth = 1404 div scl # 702
+  WindowHeight = 1872 div scl # 936
+  RowWidth = 300
+  RowHeight = 350
+  IconWidth = 280
+  IconHeight = 330
+
+const testData = @[
+  ["Activity Monitor","icons/activitymonitor.svg","activitymonitor"],
+  ["Application Developer Tools","icons/develop.svg","devtools"],
+  ["Calculator","icons/calculator.svg","calculator"],
+  ["Clock","icons/clock.svg","clock"],
+  ["Cloud Storage","icons/cloud.svg","cloud"],
+  ["EBook Reader","icons/reader.svg","ereader"],
+  ["Energy","icons/energy.svg","energy"],
+  ["Internet","icons/internet.svg","internet"],
+  ["Music Composer","icons/composer.svg","composer"],
+  ["Music Player","icons/musicplayer.svg","player"],
+  ["Paint","icons/paint.svg","paint"],
+  ["Search","icons/search.svg","search"],
+  ["Settings","icons/settings.svg","settings"],
+  ["Sound Recorder","icons/recorder.svg","recorder"],
+  ["Terminal Emulator","icons/terminal.svg","terminal"],
+  ["Text Chat","icons/chat.svg","chat"]
+]
+
+type
+  Icon = ref object
+    name: string
+    image: Image
+    executable: string
+    x, y: float32
+    w, h: float32
+
+  View = ref object
+    x, y: float32
+    w, h: float32
+    iconlist: seq[Icon]
+  
+  Launcher = ref object
+    view: View
+
+
+# The icon is an item. It contains its data, proportions and position.
+proc newIcon(): Icon =
+  Icon(
+    name: "Empty",
+    image: readImage("icons/empty.svg"),
+    executable: "",
+    x: 0,
+    y: 0,
+    w: IconWidth div scl,
+    h: IconHeight div scl
+  )
+
+proc setIconData(i: Icon, name, executable: string) =
+  i.name = name
+  i.executable = executable
+
+proc setIconImage(i: Icon, image:Image) =
+  i.image = image
+
+proc setIconPosition(i: Icon, x, y: float32) =
+  i.x = x
+  i.y = y
+
+proc updateIconPosition(i: Icon, x, y: float32) =
+  i.x += x
+  i.y += y
+
+proc draw(context: Context, icon: Icon, font: Font) =
+  # For debugging icon touch target
+  #[
+  context.fillStyle = rgba(100, 100, 100, 255)
+  var r = rect(
+    vec2(icon.x, icon.y),
+    vec2(icon.w, icon.h)
+  )
+  context.fillRect(r)
+  ]#
+  var appicon = icon.image
+  var iconscale = 100 / float32(appicon.width) 
+  pixie.draw(
+    context.image,
+    appicon,
+    translate(vec2(icon.x+20, icon.y+10)) *
+    scale(vec2(iconscale, iconscale))    
+    )
+  
+  context.image.fillText(
+    font.typeset(
+      icon.name,
+      vec2(150, 32),
+      hAlign = haCenter,
+      vAlign = vaTop,
+      wrap = true
+      ),
+    translate(vec2(icon.x-5, icon.y+120))
+    )
+
+
+proc newIconList():seq[Icon] =
+  result = newSeq[Icon]()
+  var icon: Icon
+  var iconImage: Image
+  # Parse .Desktop files here
+  
+  for i in 0..testData.len-1:
+    icon = newIcon()
     
+    try:
+      iconImage = readImage(testData[i][1])
+      icon.setIconImage(iconImage)
+    except:
+      echo "failed to load" & testData[i][1]
+    icon.setIconData(testData[i][0],testData[i][2])
+    icon.setIconPosition(float32((RowWidth*(i mod 4)+110) div scl), float32((RowHeight*(i div 4)+280) div scl))
+    result.add(icon)
+
+
+# The view is a widget. It contains its position and all its items.
+proc newView(): View =
+  View(
+    x: 0,
+    y: 0,
+    w: WindowWidth,
+    h: WindowHeight,
+    iconlist: newIconList()
+  )
+
+proc updateViewPosition(v: View, x, y: float32) =
+  v.x += x
+  v.y += y
+  for i in 0..v.iconlist.len-1:
+    v.iconlist[i].updateIconPosition(x,y)
+
+proc draw(context: Context, view: View, font: Font) =
+  # For debugging view position
+  #[
+  context.fillStyle = rgba(255, 255, 255, 255)
+  var r = rect(
+    vec2(view.x, view.y),
+    vec2(view.w, view.h)
+  )
+  context.fillRect(r)
+  ]#
+  for i in 0..view.iconlist.len-1:
+    context.draw(view.iconlist[i], font)
+
+
+# The launcher is the main window. It contains all its widgets.
+proc newLauncher(): Launcher =
+  Launcher(
+    view: newView()
+  )
+
+#proc update(l: Launcher, mx, my: float32) =
+#  l.view.updateViewPosition(mx, my)
+
+proc draw(l: Launcher, context: Context, font: Font) =
+  context.image.fill(rgba(255, 255, 255, 255))
+  context.draw(l.view, font)
+
+
+
+proc clickedButton(l: Launcher, mx, my: float32) =
+  var ic: Icon
+  for i in 0..l.view.iconlist.len-1:
+    ic = l.view.iconlist[i]
+    if(mx<ic.x+ic.w and mx>ic.x and my<ic.y+ic.h and my>ic.y):
+      echo "launching " & ic.executable
+
+
 const
   rmask = uint32 0x000000ff
   gmask = uint32 0x0000ff00
   bmask = uint32 0x00ff0000
   amask = uint32 0xff000000
-  scale = 0.5
 
-
-proc dpi(real:float):float =
-  result = real * scale
-
- # Real resolution: 1404×1872
- # Devided by two for development
-let
-  w = dpi(1404) #702
-  h = dpi(1872) #936
-
-var
-  screen = newImage(int(w), int(h))
-  ctx = newContext(screen)
-  window: WindowPtr
-  render: RendererPtr
-  mainSurface: SurfacePtr
-  mainTexture: TexturePtr
-  evt = sdl2.defaultEvent
-  font = readFont("data/Ubuntu-Regular_1.ttf")
-
- # Mouse variables
-var
-  mx = 0 # Mouse x
-  my = 0 # Mouse y
-  omx = 0 # Old mouse x
-  omy = 0 # Old mouse y
-  mxc = 0 # Mouse x on click
-  myc = 0 # Mouse y on click
-  leftMouseButtonDown = false
-
-proc blit() =
-  var dataPtr = ctx.image.data[0].addr
-  mainSurface = createRGBSurfaceFrom(dataPtr, cint w, cint h, cint 32, cint 4*w, rmask, gmask, bmask, amask)
-  mainTexture = render.createTextureFromSurface(mainSurface)
-  destroy(mainSurface)
-  render.clear()
-  render.copy(mainTexture, nil, nil)
-  destroy(mainTexture)
-  render.present()
-
-proc initDisplay() =
-  screen.fill(rgba(255, 255, 255, 255))
-  blit()
-
-proc initFont() =
-  font.size = dpi(32)
-  font.paint.color = pixie.color(0, 0, 0, 1)
-
-proc drawIconText(text: string, column, row: float) =
-  var tx = dpi((300*column)-200)
-  var ty = dpi((350*row)+170)
-  screen.fillText(font.typeset(text, vec2(dpi(300), dpi(32)), hAlign = haCenter, vAlign = vaTop, wrap = true), translate(vec2(tx, ty)))
-
-let wh = vec2(100, 100)
-
-proc checkMouseCollition(bx, by:float, wh: Vec2):bool =
-  let fmx = float(mx)
-  let fmy = float(my)
-  if(fmx<bx+wh.x and fmx>bx and fmy<by+wh.y and fmy>by ):
-    result = true
-  else:
-    result = false
-
-proc clickedButton() =
-  let wh = vec2(dpi(280), dpi(330))
-  var tx, ty:float = 0
-  for ix in 1...4:
-    for iy in 1...4:
-      tx = dpi((300*float(ix))-190)
-      ty = dpi((350*float(iy))-70)
-      if (checkMouseCollition(tx,ty,wh)):
-        echo "Clicked " & $ix & ":" & $iy
-
-proc drawTapTargets() =
-  ctx.fillStyle = rgba(255, 0, 0, 50)
-  let wh = vec2(dpi(280), dpi(330))
-  var tx, ty:float = 0
-  for ix in 1...4:
-    for iy in 1...4:
-      tx = (300*float(ix))-190
-      ty = (350*float(iy))-70
-      ctx.fillRect(rect(vec2(dpi(tx), dpi(ty)), wh))
-
-proc inhabitDisplay() =
-  let icons = readImage("icons/home.svg")
-
-  screen.draw(
-    icons,
-    scale(vec2(scale,scale))
+proc blit(renderer: RendererPtr, context: Context) =
+  var surface = createRGBSurfaceFrom(
+    context.image.data[0].addr,
+    cint context.image.width,
+    cint context.image.height,
+    cint 32,
+    cint 4*WindowWidth,
+    rmask, gmask, bmask, amask
     )
+  var texture = renderer.createTextureFromSurface(surface)
+  destroy(surface)
+  #renderer.clear()
+  renderer.copy(texture, nil, nil)
+  destroy(texture)
+  renderer.present()
 
-  initFont()
-  drawIconText("Terminal Emulator", 1, 1)
-  drawIconText("Calculator", 2, 1)
-  drawIconText("Cloud Storage", 3, 1)
-  drawIconText("Paint", 4, 1)
-  drawIconText("Internet", 1, 2)
-  drawIconText("Music Player", 2, 2)
-  drawIconText("Energy", 3, 2)
-  drawIconText("Search", 4, 2)
-  drawIconText("Clocks", 1, 3)
-  drawIconText("Application Developer Tools", 2, 3)
-  drawIconText("EBook Reader", 3, 3)
-  drawIconText("Music Composer", 4, 3)
-  drawIconText("Settings", 1, 4)
-  drawIconText("Sound Recorder", 2, 4)
-  drawIconText("Activity Monitor", 3, 4)
-  drawIconText("Text Chat", 4, 4)
 
-  #drawTapTargets() # For debugging tap targets
+type SDLException = object of Defect
+template sdlFailIf(condition: typed, reason: string) =
+  if condition: raise SDLException.newException(
+    reason & ", SDL error " & $getError()
+  )
 
-  blit()
+proc main =
+  let window = createWindow(
+      title = "PineNote Launcher",
+      x = SDL_WINDOWPOS_CENTERED,
+      y = SDL_WINDOWPOS_CENTERED,
+      w = WindowWidth,
+      h = WindowHeight,
+      flags = SDL_WINDOW_SHOWN
+    )
+  sdlFailIf window.isNil: "window could not be created"
+  defer: window.destroy()
 
-proc updateDisplay() =
-  ctx.strokeStyle = "#44BBFF"
-  ctx.lineWidth = 10
-  ctx.lineCap = lcRound
+  let renderer = createRenderer(window,-1,0)
+  sdlFailIf renderer.isNil: "renderer could not be created"
+  defer: renderer.destroy()
 
-  let
-    start = vec2(float32(omx), float32(omy))
-    stop = vec2(float32(mx), float32(my))
+  var
+    runLauncher = true
+    launcher = newLauncher()
 
-  ctx.strokeSegment(segment(start, stop))
-  blit()
+  while runLauncher:
+    # Mouse variables
+    var
+      cmx = 0 # Current mouse x
+      cmy = 0 # Current mouse y
+      omx = 0 # Old mouse x
+      omy = 0 # Old mouse y
+      mxc = 0 # Mouse x on click
+      myc = 0 # Mouse y on click
+      leftMouseButtonDown = false
+      event = sdl2.defaultEvent
 
- # Application MAIN
+    var font = readFont("data/Ubuntu-Regular_1.ttf")
+    font.size = 32 div scl
+    font.paint.color = pixie.color(0, 0, 0, 1)
 
-discard sdl2.init(INIT_EVERYTHING)
-
-window = createWindow(
-  title = "PineNote Launcher",
-  x = SDL_WINDOWPOS_CENTERED,
-  y = SDL_WINDOWPOS_CENTERED,
-  w = cint w,
-  h = cint h,
-  flags = SDL_WINDOW_SHOWN
-)
-render = createRenderer(window, -1, 0)
-initDisplay()
-inhabitDisplay()
-  
-
- # Mouse and Window event logic 
-
-while true:
-  while waitEvent(evt):
-    case evt.kind:
+    var image = newImage(int(WindowWidth), int(WindowHeight))
+    var context = newContext(image)
+    launcher.draw(context, font)
+    renderer.blit(context)
+    
+    while waitEvent(event):
+      case event.kind
       of QuitEvent:
-        quit(0)
+        runLauncher = false
+        break
       of MouseButtonUp:
         # Left mouse button is released
-        if (evt.button.button == 1):
+        if (event.button.button == 1):
           leftMouseButtonDown = false
-          mx = evt.button.x
-          my = evt.button.y
-          if ((mxc-mx < 20) and (mxc-mx > -20) and (myc-my < 20) and (myc-my > -20)):
-            clickedButton()
+          cmx = event.button.x
+          cmy = event.button.y
+          # Make sure the user isn't just releasing a scroll
+          if ((mxc-cmx < 20) and (mxc-cmx > -20) and (myc-cmy < 20) and (myc-cmy > -20)):
+            launcher.clickedButton(float32(cmx),float32(cmy))
       of MouseButtonDown:
         # Left mouse button is pressed
-        if (evt.button.button == 1):
+        if (event.button.button == 1):
           leftMouseButtonDown = true
-          omx = evt.button.x
-          omy = evt.button.y
-          mxc = evt.button.x
-          myc = evt.button.y
+          omx = event.button.x
+          omy = event.button.y
+          mxc = event.button.x
+          myc = event.button.y
       of MouseMotion:
         # Mouse is dragged
         if(leftMouseButtonDown):
-          mx = evt.motion.x
-          my = evt.motion.y
-          if (mxc-mx > 20):
-            echo "go right"
-          elif (mxc-mx < -20):
-            echo "go left"
-          if (myc-my > 20):
-            echo "go down"
-          elif (myc-my < -20):
-            echo "go up"
-          updateDisplay()
-          omx = mx
-          omy = my
+          cmx = event.motion.x
+          cmy = event.motion.y
+          # Make sure the user isn't just clicking unsteadily
+          if (myc-cmy > 20 or myc-cmy < -20):
+            launcher.view.updateViewPosition(float32(0), float32(cmy-omy))
+          omx = cmx
+          omy = cmy
+          launcher.draw(context, font)
+          renderer.blit(context)
       else:
         discard
+
+main()
