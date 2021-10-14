@@ -25,6 +25,7 @@ Navigate to the project directory and run: `nim c -r launcher.nim`
 
 - [ ] Load icon objects from `.desktop` files
 - [ ] Make clicking an icon launch the application
+- [ ] Clean SVG icon source
 
 ### Done
 
